@@ -267,7 +267,6 @@ nav {
 .reveal.active { opacity: 1; transform: translateY(0); }
 
 /* --- MOBILE RESPONSIVE --- */
-/* Update pada bagian MOBILE RESPONSIVE di style.css */
 @media (max-width: 768px) {
     /* Mencegah overflow horizontal yang sering merusak tampilan mobile */
     body, html {
@@ -280,6 +279,26 @@ nav {
     .hero, .manifesto, .gallery, .footer {
         padding-left: 1.5rem !important;
         padding-right: 1.5rem !important;
+    }
+
+    /* 1. PERBAIKAN NAVBAR AGAR TIDAK KEPOTONG */
+    nav {
+        padding: 1.5rem 1.5rem !important;
+    }
+    
+    .nav-links {
+        gap: 1rem !important;
+    }
+    
+    .nav-links a {
+        font-size: 0.65rem;
+    }
+
+    /* 2. PERBAIKAN JUDUL HERO AGAR TIDAK KELUAR LAYAR */
+    .hero-title {
+        font-size: clamp(2.8rem, 13vw, 4rem) !important;
+        word-break: break-word;
+        margin-top: 3rem;
     }
 
     /* Memperkecil ukuran teks Manifesto agar tidak terlalu panjang ke bawah */
