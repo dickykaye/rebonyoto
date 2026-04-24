@@ -268,47 +268,48 @@ nav {
 
 /* --- MOBILE RESPONSIVE --- */
 @media (max-width: 768px) {
-    /* Mencegah overflow horizontal yang sering merusak tampilan mobile */
     body, html {
         overflow-x: hidden;
         position: relative;
         width: 100%;
     }
 
-    /* Padding lebih kecil untuk layar HP agar konten tidak terjepit */
     .hero, .manifesto, .gallery, .footer {
         padding-left: 1.5rem !important;
         padding-right: 1.5rem !important;
     }
 
-    /* 1. PERBAIKAN NAVBAR AGAR TIDAK KEPOTONG */
+    /* 1. PERBAIKAN NAVBAR (Disusun Atas-Bawah) */
     nav {
-        padding: 1.5rem 1.5rem !important;
+        padding: 1.2rem 1rem !important;
+        flex-direction: column; /* Mengubah susunan menyamping jadi atas-bawah */
+        gap: 0.8rem; /* Jarak antara logo dan menu */
+        justify-content: center;
     }
     
     .nav-links {
-        gap: 1rem !important;
+        gap: 1.2rem !important;
+        width: 100%;
+        justify-content: center; /* Menengahkan teks menu */
     }
     
     .nav-links a {
         font-size: 0.65rem;
     }
 
-    /* 2. PERBAIKAN JUDUL HERO AGAR TIDAK KELUAR LAYAR */
+    /* 2. PERBAIKAN JUDUL HERO (Otomatis Mengikuti Layar) */
     .hero-title {
-        font-size: clamp(2.8rem, 13vw, 4rem) !important;
-        word-break: break-word;
-        margin-top: 3rem;
+        font-size: 16vw !important; /* 16% dari lebar layar HP, dijamin tidak akan keluar layar */
+        margin-top: 4rem; /* Memberi ruang karena navbar sekarang sedikit lebih tinggi */
+        word-break: normal; 
     }
 
-    /* Memperkecil ukuran teks Manifesto agar tidak terlalu panjang ke bawah */
     .manifesto-text {
         font-size: 1.8rem;
         line-height: 1.3;
         width: 100%;
     }
 
-    /* Optimasi Gallery: Gambar dibuat full width di HP */
     .gallery-grid {
         display: flex;
         flex-direction: column;
@@ -318,21 +319,19 @@ nav {
     .img-1, .img-2, .img-3 {
         grid-column: span 12 / span 12 !important;
         margin-top: 0 !important;
-        aspect-ratio: 4/5; /* Konsistensi rasio di mobile */
+        aspect-ratio: 4/5;
     }
 
-    /* Memperbaiki ukuran Countdown di layar kecil */
     .countdown-timer {
         gap: 0.5rem;
         justify-content: center;
     }
     
     .timer-segment span {
-        font-size: 2.2rem; /* Lebih proporsional */
+        font-size: 2.2rem;
     }
 
-    /* Menghilangkan elemen dekoratif yang berat di mobile jika perlu */
     .bg-fracture-lines {
-        opacity: 0.08; /* Lebih tipis agar teks lebih terbaca */
+        opacity: 0.08;
     }
 }
