@@ -1,204 +1,175 @@
-// Pastikan DOM sudah dimuat sebelum menjalankan animasi
-document.addEventListener("DOMContentLoaded", () => {
-    
-    // --- CURSOR LOGIC ---
-    const dot = document.getElementById('cursor-dot');
-    const trail = document.getElementById('cursor-trail');
-    let mouseX = window.innerWidth / 2;
-    let mouseY = window.innerHeight / 2;
-    let trailX = mouseX;
-    let trailY = mouseY;
+// --- FITUR BACKGROUND ANIMASI PARTIKEL (INTERAKTIF) --- //
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
 
-    document.addEventListener('mousemove', (e) => {
-        mouseX = e.clientX;
-        mouseY = e.clientY;
-        dot.style.left = mouseX + 'px';
-        dot.style.top = mouseY + 'px';
-    });
+let particlesArray;
+let mouse = { x: null, y: null, radius: 150 };
 
-    // Smooth trailing
-    gsap.ticker.add(() => {
-        trailX += (mouseX - trailX) * 0.15;
-        trailY += (mouseY - trailY) * 0.15;
-        trail.style.left = trailX + 'px';
-        trail.style.top = trailY + 'px';
-    });
+// Menyesuaikan ukuran kanvas
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
 
-    // Hover effect mapping
-    document.querySelectorAll('.interactive').forEach(el => {
-        el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
-        el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
-    });
+// Melacak posisi mouse
+window.addEventListener('mousemove', (event) => {
+    mouse.x = event.x;
+    mouse.y = event.y;
+});
 
+// Menghapus posisi mouse saat keluar dari layar
+window.addEventListener('mouseout', () => {
+    mouse.x = undefined;
+    mouse.y = undefined;
+});
 
-    // --- PARALLAX HERO ---
-    const fence = document.getElementById('fence');
-    const wire = document.getElementById('wire');
-    const frame = document.getElementById('frame');
+class Particle {
+    constructor(x, y, directionX, directionY, size, color) {
+        this.x = x;
+        this.y = y;
+        this.directionX = directionX;
+        this.directionY = directionY;
+        this.size = size;
+        this.color = color;
+    }
 
-    document.addEventListener('mousemove', (e) => {
-        const x = (e.clientX / window.innerWidth - 0.5) * 2;
-        const y = (e.clientY / window.innerHeight - 0.5) * 2;
-        
-        gsap.to(fence, { x: x * -20, y: y * -20, duration: 1, ease: "power2.out" });
-        gsap.to(wire, { x: x * 40, y: y * 20, rotation: -3 + x, duration: 1, ease: "power2.out" });
-        gsap.to(frame, { x: x * 10, y: y * 10, duration: 1, ease: "power2.out" });
-    });
+    draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+        ctx.fillStyle = '#007AFF'; // Warna biru Apple
+        ctx.fill();
+    }
 
+    update() {
+        // Pantulan di batas layar
+        if (this.x > canvas.width || this.x < 0) this.directionX = -this.directionX;
+        if (this.y > canvas.height || this.y < 0) this.directionY = -this.directionY;
 
-    // --- INTERACTION 1: HERO TEXT PHYSICS (FALL & RETURN) ---
-    const title = document.getElementById('hero-title');
-    const letters = title.querySelectorAll('span');
-    let isAnimating = false;
+        // Cek deteksi tabrakan dengan mouse
+        let dx = mouse.x - this.x;
+        let dy = mouse.y - this.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
 
-    // Hover glitch
-    title.addEventListener('mouseenter', () => { if(!isAnimating) title.classList.add('glitch-hover'); });
-    title.addEventListener('mouseleave', () => title.classList.remove('glitch-hover'));
-
-    // Click gravity physics
-    title.addEventListener('click', () => {
-        if(isAnimating) return;
-        isAnimating = true;
-        title.classList.remove('glitch-hover');
-
-        // Fall down
-        gsap.to(letters, {
-            y: () => window.innerHeight,
-            rotation: () => (Math.random() - 0.5) * 180,
-            duration: 1.2,
-            ease: "power2.in",
-            stagger: 0.05,
-            onComplete: () => {
-                // Wait then snap back up
-                setTimeout(() => {
-                    gsap.to(letters, {
-                        y: 0,
-                        rotation: 0,
-                        duration: 1.5,
-                        ease: "elastic.out(1, 0.4)",
-                        stagger: 0.05,
-                        onComplete: () => { isAnimating = false; }
-                    });
-                }, 2500);
-            }
-        });
-    });
-
-
-    // --- GSAP SCROLL ANIMATIONS ---
-    gsap.registerPlugin(ScrollTrigger);
-
-    // About text reveal
-    gsap.utils.toArray('.about-text p').forEach((p) => {
-        gsap.to(p, {
-            scrollTrigger: { trigger: p, start: "top 85%" },
-            opacity: 1,
-            y: 0,
-            duration: 1,
-            ease: "power3.out"
-        });
-    });
-
-    // Ritual Slam Effect (Screen shake equivalent)
-    ScrollTrigger.create({
-        trigger: "#ritual",
-        start: "top 50%",
-        onEnter: () => {
-            // Slam text
-            gsap.to("#ritual-text", {
-                scale: 1,
-                opacity: 1,
-                duration: 0.4,
-                ease: "power4.in"
-            });
-            // Screen shake
-            setTimeout(() => {
-                gsap.to(document.body, {
-                    x: () => (Math.random() - 0.5) * 20,
-                    y: () => (Math.random() - 0.5) * 20,
-                    yoyo: true,
-                    repeat: 5,
-                    duration: 0.05,
-                    onComplete: () => gsap.set(document.body, {x:0, y:0})
-                });
-            }, 400); // Trigger shake right when scale hits 1
+        if (distance < mouse.radius + this.size) {
+            if (mouse.x < this.x && this.x < canvas.width - this.size * 10) this.x += 2;
+            if (mouse.x > this.x && this.x > this.size * 10) this.x -= 2;
+            if (mouse.y < this.y && this.y < canvas.height - this.size * 10) this.y += 2;
+            if (mouse.y > this.y && this.y > this.size * 10) this.y -= 2;
         }
-    });
 
+        // Pindahkan partikel
+        this.x += this.directionX;
+        this.y += this.directionY;
+        this.draw();
+    }
+}
 
-    // --- EASTER EGGS / SECRET INTERACTIONS ---
+function init() {
+    particlesArray = [];
+    let numberOfParticles = (canvas.height * canvas.width) / 10000;
     
-    // 1. Press 'R' for Glitch
-    const flash = document.getElementById('flash');
-    document.addEventListener('keydown', (e) => {
-        if(e.key.toLowerCase() === 'r') {
-            gsap.to(flash, { opacity: 0.8, duration: 0.05, yoyo: true, repeat: 3, onComplete: ()=> gsap.set(flash, {opacity: 0}) });
-        }
-    });
+    for (let i = 0; i < numberOfParticles; i++) {
+        let size = (Math.random() * 2) + 1;
+        let x = (Math.random() * ((innerWidth - size * 2) - (size * 2)) + size * 2);
+        let y = (Math.random() * ((innerHeight - size * 2) - (size * 2)) + size * 2);
+        let directionX = (Math.random() * 1) - 0.5;
+        let directionY = (Math.random() * 1) - 0.5;
+        let color = '#007AFF';
 
-    // 2. Click Background 5x
-    let clickCount = 0;
-    let clickTimer;
-    document.addEventListener('click', (e) => {
-        if(!e.target.closest('.interactive')) {
-            clickCount++;
-            clearTimeout(clickTimer);
-            clickTimer = setTimeout(() => { clickCount = 0; }, 2000); // reset if slow
+        particlesArray.push(new Particle(x, y, directionX, directionY, size, color));
+    }
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+
+    for (let i = 0; i < particlesArray.length; i++) {
+        particlesArray[i].update();
+    }
+    connect();
+}
+
+function connect() {
+    let opacityValue = 1;
+    for (let a = 0; a < particlesArray.length; a++) {
+        for (let b = a; b < particlesArray.length; b++) {
+            let distance = ((particlesArray[a].x - particlesArray[b].x) * (particlesArray[a].x - particlesArray[b].x)) +
+                           ((particlesArray[a].y - particlesArray[b].y) * (particlesArray[a].y - particlesArray[b].y));
             
-            if(clickCount === 5) {
-                const secret = document.getElementById('secret-text');
-                gsap.to(secret, { opacity: 1, scale: 1.1, duration: 0.5, yoyo: true, repeat: 1, hold: 2, onComplete: ()=> {secret.style.opacity = 0; clickCount = 0;} });
+            if (distance < (canvas.width / 10) * (canvas.height / 10)) {
+                opacityValue = 1 - (distance / 15000);
+                // Garis biru yang terhubung
+                ctx.strokeStyle = `rgba(0, 198, 255, ${opacityValue})`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
+                ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
+                ctx.stroke();
             }
         }
-    });
+    }
+}
 
-    // 3. Long hover logo changes text
-    let hoverTimeout;
-    const originalHTML = title.innerHTML;
-    title.addEventListener('mouseenter', () => {
-        hoverTimeout = setTimeout(() => {
-            if(!isAnimating) {
-                // Quick replace to string, no spans needed for this state
-                title.innerHTML = "UDAH MAKAN BELUM?";
-                title.style.fontSize = "clamp(2rem, 6vw, 5rem)";
-            }
-        }, 3000);
-    });
-    title.addEventListener('mouseleave', () => {
-        clearTimeout(hoverTimeout);
-        if(!isAnimating) {
-            title.innerHTML = originalHTML;
-            title.style.fontSize = ""; // Reset
+init();
+animate();
+
+
+// --- FITUR ANIMASI SCROLL --- //
+const observerOptions = {
+    threshold: 0.15,
+    rootMargin: "0px 0px -50px 0px"
+};
+
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('show');
         }
     });
+}, observerOptions);
 
-    // 4. Bottom Scroll Fade in
-    window.addEventListener('scroll', () => {
-        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 50) {
-            document.getElementById('bottom-msg').style.opacity = "1";
-        }
+const animatedElements = document.querySelectorAll('.hidden-y, .hidden-x-left, .hidden-x-right, .hidden-scale');
+animatedElements.forEach((el) => observer.observe(el));
+
+
+// --- FITUR HOVER VIDEO UNTUK SUARA (MUTE/UNMUTE) --- //
+const portfolioVideos = document.querySelectorAll('.video-container video');
+
+portfolioVideos.forEach(video => {
+    video.addEventListener('mouseenter', () => {
+        video.muted = false; 
     });
 
-
-    // --- GALLERY DRAG LOGIC ---
-    const slider = document.getElementById('gallery');
-    let isDown = false;
-    let startX;
-    let scrollLeft;
-
-    slider.addEventListener('mousedown', (e) => {
-        isDown = true;
-        startX = e.pageX - slider.offsetLeft;
-        scrollLeft = slider.scrollLeft;
+    video.addEventListener('mouseleave', () => {
+        video.muted = true;  
     });
-    slider.addEventListener('mouseleave', () => isDown = false);
-    slider.addEventListener('mouseup', () => isDown = false);
-    slider.addEventListener('mousemove', (e) => {
-        if(!isDown) return;
+});
+
+// --- SMOOTH SCROLL UNTUK MENU NAVBAR --- //
+document.querySelectorAll('nav a').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
         e.preventDefault();
-        const x = e.pageX - slider.offsetLeft;
-        const walk = (x - startX) * 2;
-        slider.scrollLeft = scrollLeft - walk;
+        const targetId = this.getAttribute('href');
+        document.querySelector(targetId).scrollIntoView({
+            behavior: 'smooth'
+        });
     });
+});
 
+// --- FITUR HAMBURGER MENU --- //
+const hamburger = document.querySelector('.hamburger');
+const navLinks = document.querySelector('.nav-links');
+const links = document.querySelectorAll('.nav-links a');
+
+hamburger.addEventListener('click', () => {
+    navLinks.classList.toggle('nav-active');
+});
+
+links.forEach(link => {
+    link.addEventListener('click', () => {
+        navLinks.classList.remove('nav-active');
+    });
 });
